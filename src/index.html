@@ -1,11 +1,285 @@
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>PakePlus</title>
-    </head>
-    <body>
-        Hello World
-    </body>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🍌 Nano Banana - 图片生成工作台</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- 顶部导航 -->
+        <header class="header">
+            <div class="logo">
+                <span class="logo-icon">🍌</span>
+                <span class="logo-text">Nano Banana Pro</span>
+                <span class="logo-badge">Image Studio</span>
+            </div>
+            <div class="header-right">
+                <div class="api-status" id="apiStatus">
+                    <span class="status-dot"></span>
+                    <span class="status-text">未连接</span>
+                </div>
+                <button class="btn-icon" id="themeBtn" title="切换主题">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <!-- 左侧控制面板 -->
+            <aside class="control-panel">
+                <!-- API 设置 -->
+                <div class="panel-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-key"></i> API 设置
+                    </h3>
+                    <div class="form-group">
+                        <label>API Key</label>
+                        <div class="input-with-icon">
+                            <input type="password" id="apiKey" placeholder="输入你的云雾API Key" />
+                            <button class="btn-eye" id="toggleApiKey" title="显示/隐藏">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>API 端点</label>
+                        <div class="endpoint-selector">
+                            <button class="endpoint-btn active" data-endpoint="gemini" id="endpointGemini">
+                                <i class="fas fa-diamond"></i> Gemini 原生
+                            </button>
+                            <button class="endpoint-btn" data-endpoint="openai" id="endpointOpenai">
+                                <i class="fas fa-robot"></i> OpenAI 兼容
+                            </button>
+                        </div>
+                        <div class="endpoint-url" id="endpointUrl">
+                            /v1beta/models/gemini-3-pro-image-preview:generateContent
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 提示词 -->
+                <div class="panel-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-edit"></i> 提示词
+                    </h3>
+                    <div class="form-group">
+                        <textarea id="promptText" rows="4" placeholder="描述你想生成的图片内容...&#10;例如：一只可爱的柴犬在樱花树下奔跑，阳光明媚，动漫风格&#10;&#10;Ctrl+Enter 快速生成"></textarea>
+                        <div class="textarea-footer">
+                            <span class="char-count" id="charCount">0 字</span>
+                            <button class="btn-sm" id="clearPrompt" title="清除">
+                                <i class="fas fa-eraser"></i> 清除
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 参考图片（多图版） -->
+                <div class="panel-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-image"></i> 参考图片
+                        <span class="optional-tag">可选 · 最多5张</span>
+                    </h3>
+                    <div class="upload-area" id="uploadArea">
+                        <div class="upload-placeholder" id="uploadPlaceholder">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>拖拽图片到这里或点击上传</p>
+                            <span class="upload-hint">支持 JPG、PNG、WebP，最大 20MB/张</span>
+                        </div>
+                        <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" multiple hidden />
+                    </div>
+                    <div class="ref-images-grid" id="refImagesGrid"></div>
+                    <div class="ref-images-actions" id="refImagesActions" style="display:none;">
+                        <span class="ref-count" id="refCount">0/5</span>
+                        <button class="btn-sm" id="addMoreBtn"><i class="fas fa-plus"></i> 添加</button>
+                        <button class="btn-sm btn-sm-danger" id="clearAllBtn"><i class="fas fa-trash"></i> 清空</button>
+                    </div>
+                </div>
+
+                <!-- 图片比例 -->
+                <div class="panel-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-crop-alt"></i> 图片比例
+                    </h3>
+                    <div class="ratio-grid" id="ratioGrid">
+                        <button class="ratio-btn active" data-ratio="auto" title="自动比例">
+                            <div class="ratio-preview ratio-auto"><i class="fas fa-magic"></i></div>
+                            <span>自动</span>
+                        </button>
+                        <button class="ratio-btn" data-ratio="1:1" title="1:1 正方形">
+                            <div class="ratio-preview ratio-1-1"></div>
+                            <span>1:1</span>
+                        </button>
+                        <button class="ratio-btn" data-ratio="16:9" title="16:9 宽屏">
+                            <div class="ratio-preview ratio-16-9"></div>
+                            <span>16:9</span>
+                        </button>
+                        <button class="ratio-btn" data-ratio="9:16" title="9:16 竖屏">
+                            <div class="ratio-preview ratio-9-16"></div>
+                            <span>9:16</span>
+                        </button>
+                        <button class="ratio-btn" data-ratio="4:3" title="4:3">
+                            <div class="ratio-preview ratio-4-3"></div>
+                            <span>4:3</span>
+                        </button>
+                        <button class="ratio-btn" data-ratio="3:4" title="3:4">
+                            <div class="ratio-preview ratio-3-4"></div>
+                            <span>3:4</span>
+                        </button>
+                        <button class="ratio-btn" data-ratio="3:2" title="3:2">
+                            <div class="ratio-preview ratio-3-2"></div>
+                            <span>3:2</span>
+                        </button>
+                        <button class="ratio-btn" data-ratio="2:3" title="2:3">
+                            <div class="ratio-preview ratio-2-3"></div>
+                            <span>2:3</span>
+                        </button>
+                        <button class="ratio-btn" data-ratio="5:4" title="5:4">
+                            <div class="ratio-preview ratio-5-4"></div>
+                            <span>5:4</span>
+                        </button>
+                        <button class="ratio-btn" data-ratio="4:5" title="4:5">
+                            <div class="ratio-preview ratio-4-5"></div>
+                            <span>4:5</span>
+                        </button>
+                        <button class="ratio-btn" data-ratio="21:9" title="21:9 超宽">
+                            <div class="ratio-preview ratio-21-9"></div>
+                            <span>21:9</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 图片分辨率 -->
+                <div class="panel-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-expand-arrows-alt"></i> 图片分辨率
+                    </h3>
+                    <div class="resolution-selector" id="resolutionSelector">
+                        <button class="resolution-btn active" data-resolution="1K">
+                            <div class="res-icon">1K</div>
+                            <div class="res-info">
+                                <span class="res-label">标准</span>
+                                <span class="res-desc">快速生成</span>
+                            </div>
+                        </button>
+                        <button class="resolution-btn" data-resolution="2K">
+                            <div class="res-icon">2K</div>
+                            <div class="res-info">
+                                <span class="res-label">高清</span>
+                                <span class="res-desc">推荐</span>
+                            </div>
+                        </button>
+                        <button class="resolution-btn" data-resolution="4K">
+                            <div class="res-icon">4K</div>
+                            <div class="res-info">
+                                <span class="res-label">超清</span>
+                                <span class="res-desc">最佳画质</span>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 生成按钮 -->
+                <button class="btn-generate" id="generateBtn">
+                    <i class="fas fa-wand-magic-sparkles"></i>
+                    <span>生成图片</span>
+                </button>
+            </aside>
+
+            <!-- 右侧展示区 -->
+            <section class="display-area">
+                <!-- 空状态 -->
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-illustration">
+                        <div class="banana-bounce">🍌</div>
+                    </div>
+                    <h2>开始创作吧！</h2>
+                    <p>输入提示词，选择比例和分辨率，点击「生成图片」</p>
+                    <div class="quick-start">
+                        <h4>快速开始 ↓</h4>
+                        <div class="quick-prompts">
+                            <button class="quick-prompt-btn" data-prompt="一只可爱的柴犬在樱花树下奔跑，阳光明媚，动漫风格，高质量">🐕 柴犬樱花</button>
+                            <button class="quick-prompt-btn" data-prompt="赛博朋克风格的未来城市夜景，霓虹灯光，雨中倒影，电影级画质">🌃 赛博城市</button>
+                            <button class="quick-prompt-btn" data-prompt="一杯精美的拿铁咖啡拉花，木桌上，旁边有一本打开的书和秋叶，暖色调">☕ 咖啡时光</button>
+                            <button class="quick-prompt-btn" data-prompt="中国水墨画风格的山水画，远山如黛，近水含烟，古松苍劲，意境深远">🏔️ 水墨山水</button>
+                            <button class="quick-prompt-btn" data-prompt="宇宙深处，一颗蓝色星球旁边漂浮着发光的水晶，星云和星尘背景，科幻风格">🌌 宇宙水晶</button>
+                            <button class="quick-prompt-btn" data-prompt="Studio Ghibli风格，一个小女孩站在开满向日葵的田野里，蓝天白云，温馨治愈">🌻 吉卜力田野</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 加载状态 -->
+                <div class="loading-state" id="loadingState" style="display:none;">
+                    <div class="loading-animation">
+                        <div class="loading-banana">🍌</div>
+                        <div class="loading-ring"></div>
+                    </div>
+                    <h3>正在生成图片...</h3>
+                    <p class="loading-tip" id="loadingTip">AI 正在理解你的创意</p>
+                    <div class="loading-progress">
+                        <div class="progress-bar" id="progressBar"></div>
+                    </div>
+                </div>
+
+                <!-- 结果展示 -->
+                <div class="result-area" id="resultArea" style="display:none;">
+                    <div class="result-header">
+                        <div class="result-info">
+                            <h3 id="resultTitle">✅ 生成完成</h3>
+                            <span class="result-meta" id="resultMeta"></span>
+                        </div>
+                        <div class="result-actions">
+                            <button class="btn-action" id="downloadBtn" title="下载图片">
+                                <i class="fas fa-download"></i> 下载
+                            </button>
+                            <button class="btn-action" id="copyBtn" title="复制到剪贴板">
+                                <i class="fas fa-copy"></i> 复制
+                            </button>
+                            <button class="btn-action" id="fullscreenBtn" title="全屏预览">
+                                <i class="fas fa-expand"></i> 全屏
+                            </button>
+                            <button class="btn-action" id="newGenerateBtn" title="重新生成">
+                                <i class="fas fa-redo"></i> 重新生成
+                            </button>
+                        </div>
+                    </div>
+                    <div class="result-image-container" id="resultImageContainer">
+                        <img id="resultImage" src="" alt="生成的图片" />
+                    </div>
+                    <div class="result-text" id="resultText" style="display:none;">
+                        <h4><i class="fas fa-comment-alt"></i> AI 回复</h4>
+                        <p id="resultTextContent"></p>
+                    </div>
+                </div>
+
+                <!-- 历史记录 -->
+                <div class="history-section" id="historySection" style="display:none;">
+                    <div class="history-header">
+                        <h3><i class="fas fa-history"></i> 生成历史</h3>
+                        <button class="btn-sm" id="clearHistory">
+                            <i class="fas fa-trash"></i> 清空
+                        </button>
+                    </div>
+                    <div class="history-grid" id="historyGrid"></div>
+                </div>
+            </section>
+        </main>
+
+        <!-- 全屏预览 -->
+        <div class="modal-overlay" id="fullscreenModal" style="display:none;">
+            <div class="modal-content">
+                <button class="modal-close" id="modalClose"><i class="fas fa-times"></i></button>
+                <img id="fullscreenImage" src="" alt="全屏预览" />
+            </div>
+        </div>
+
+        <!-- Toast -->
+        <div class="toast-container" id="toastContainer"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
 </html>
